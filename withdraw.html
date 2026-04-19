@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SNZ | بوابة السحب الآمن</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; padding-bottom: 90px; padding-top: 35px; min-height: 100dvh; }
+        .glass-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(6, 182, 212, 0.15); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); transition: transform 0.3s ease; }
+        .cyber-input { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; color: #06b6d4; font-family: monospace; }
+        .cyber-input:focus { border-color: #06b6d4; outline: none; box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+        .cyber-input:disabled { background: rgba(255,255,255,0.02); color: #64748b; border-color: rgba(255,255,255,0.05); cursor: not-allowed; }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        .ticker-wrap { width: 100%; overflow: hidden; background: rgba(2, 6, 23, 0.95); border-bottom: 1px solid rgba(6, 182, 212, 0.2); backdrop-filter: blur(10px); position: fixed; top: 0; left: 0; z-index: 40; height: 32px; }
+        .ticker-content { display: flex; white-space: nowrap; animation: ticker 40s linear infinite; }
+        .coin-card { border: 2px solid rgba(255,255,255,0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .coin-card.active { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); }
+        .balance-glow { animation: glow 2s infinite alternate; }
+        @keyframes glow { 0% { opacity: 0.6; } 100% { opacity: 1; text-shadow: 0 0 10px #06b6d4; } }
+        .btn-loading { opacity: 0.7; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ultimateLoader" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#020617] transition-all duration-700">
+        <div class="relative w-24 h-24 flex items-center justify-center mb-8">
+            <div class="absolute inset-0 rounded-full border-t-2 border-r-2 border-orange-500 animate-spin opacity-80"></div>
+            <div class="absolute inset-3 rounded-full border-b-2 border-l-2 border-cyan-500 animate-[spin_1.5s_reverse_infinite] opacity-60"></div>
+            <div class="w-10 h-10 bg-orange-500/20 rounded-full animate-ping absolute"></div>
+            <span class="text-xl font-black text-white tracking-widest z-10">SNZ</span>
+        </div>
+        <div class="text-[9px] text-orange-400 font-mono tracking-[0.3em] uppercase" id="loaderText">ENCRYPTING WITHDRAWAL TUNNEL...</div>
+    </div>
+
+    <div class="ticker-wrap flex items-center">
+        <div class="ticker-content gap-12 text-[10px] font-mono">
+            <span class="text-orange-400 font-bold flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span> WITHDRAWAL VERIFICATION ACTIVE</span>
+            <span class="text-cyan-400 font-bold flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> SECURE COLD WALLET CONNECTED</span>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-12 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="pt-4 px-4 flex justify-between items-center mb-4 relative z-10">
+        <button onclick="window.location.href='dashboard.html'" class="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-white transition-colors bg-white/5 px-3 py-2 rounded-lg border border-white/5 active:scale-95"><span>❮ عودة</span></button>
+        <h2 class="text-sm font-black text-orange-400 uppercase tracking-tighter">بوابة السحب الذكية</h2>
+    </div>
+
+    <div class="px-4 mb-6 relative z-10">
+        <div class="glass-card p-6 border-b-4 border-orange-600/50">
+            <div class="text-center mb-8 bg-black/30 p-4 rounded-2xl border border-white/5">
+                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">الرصيد القابل للسحب (USDT)</p>
+                <h1 class="text-3xl font-black text-cyan-400 balance-glow">$<span id="currentBalance">0.00</span></h1>
+            </div>
+
+            <div class="mb-6">
+                <label class="text-[10px] text-gray-400 font-bold mb-3 block uppercase tracking-widest">اختر العملة</label>
+                <div class="coin-card active rounded-2xl p-4 flex items-center gap-3 bg-black/40">
+                    <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="w-7 h-7">
+                    <div><div class="text-xs font-black text-white">USDT</div><div class="text-[8px] text-gray-500">Tether USD</div></div>
+                </div>
+            </div>
+
+            <div class="mb-6 relative">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">عنوان المحفظة</label>
+                    <span id="lockStatus" class="text-[8px] text-green-500 font-bold hidden">🔒 عنوان مجمّد</span>
+                </div>
+                <input type="text" id="targetAddress" placeholder="0x..." class="w-full cyber-input p-4 rounded-xl text-xs outline-none">
+            </div>
+
+            <div class="mb-8">
+                <label class="text-[10px] text-gray-400 font-bold mb-2 block uppercase tracking-widest">المبلغ</label>
+                <div class="relative">
+                    <input type="number" id="withdrawAmt" placeholder="0.00" class="w-full cyber-input p-4 rounded-xl text-lg font-black outline-none bg-black/60">
+                    <button onclick="setAll()" class="absolute left-3 top-1/2 -translate-y-1/2 bg-cyan-600/20 text-cyan-400 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-cyan-500/20 active:scale-95">الكل</button>
+                </div>
+                <div class="flex justify-between mt-2 px-1 text-[9px] font-bold">
+                    <span class="text-gray-500">رسوم: $0.80</span>
+                    <span class="text-gray-500">ستستلم: <span class="text-orange-400" id="finalAmt">$0.00</span></span>
+                </div>
+            </div>
+
+            <button onclick="processWithdraw()" id="withdrawBtn" class="w-full bg-gradient-to-r from-orange-600 to-orange-500 py-4 rounded-xl font-black text-white active:scale-95 transition-all flex justify-center items-center gap-3">
+                <span id="btnText">تأكيد طلب السحب</span>
+                <div id="btnSpinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="config.js"></script>
+    <script>
+        // نظام الإشعارات (Toast)
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl backdrop-blur-md border shadow-2xl text-[11px] font-bold transition-all duration-300 transform translate-y-[-20px] ${type === 'success' ? 'bg-green-900/90 border-green-500 text-green-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
+            toast.innerHTML = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(() => document.getElementById('ultimateLoader').style.display = 'none', 1000);
+        });
+
+        let userEmail = localStorage.getItem('currentUserEmail') || "architect@local.dev";
+        let userBalance = 0;
+
+        // جلب الرصيد الحقيقي والحالة من قاعدة البيانات
+        async function fetchUserData() {
+            const { data } = await _supabase.from('users').select('balance, withdraw_address').eq('email', userEmail).single();
+            if(data) {
+                userBalance = parseFloat(data.balance);
+                document.getElementById('currentBalance').innerText = userBalance.toFixed(2);
+                if(data.withdraw_address) {
+                    const addrInput = document.getElementById('targetAddress');
+                    addrInput.value = data.withdraw_address;
+                    addrInput.disabled = true;
+                    document.getElementById('lockStatus').classList.remove('hidden');
+                }
+            }
+        }
+        fetchUserData();
+
+        document.getElementById('withdrawAmt').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            document.getElementById('finalAmt').innerText = "$" + Math.max(0, val - 0.80).toFixed(2);
+        });
+
+        function setAll() {
+            document.getElementById('withdrawAmt').value = userBalance;
+            document.getElementById('finalAmt').innerText = "$" + Math.max(0, userBalance - 0.80).toFixed(2);
+        }
+
+        async function processWithdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmt').value);
+            const address = document.getElementById('targetAddress').value.trim();
+            const btn = document.getElementById('withdrawBtn');
+
+            if (!address) return showToast("الرجاء إدخال عنوان المحفظة");
+            if (isNaN(amount) || amount < 2) return showToast("الحد الأدنى للسحب هو $2.00");
+            if (amount > userBalance) return showToast("عذراً، الرصيد غير كافٍ");
+
+            // تشغيل اللوادر على الزر
+            btn.classList.add('btn-loading');
+            document.getElementById('btnText').innerText = "جاري معالجة الطلب...";
+            document.getElementById('btnSpinner').classList.remove('hidden');
+
+            try {
+                // 1. تحديث الرصيد فوراً في القاعدة (خصم)
+                const { error: updateError } = await _supabase
+                    .from('users')
+                    .update({ balance: userBalance - amount })
+                    .eq('email', userEmail);
+
+                if (updateError) throw updateError;
+
+                // 2. إذا كان أول سحب، حفظ العنوان وتجميده
+                await _supabase
+                    .from('users')
+                    .update({ withdraw_address: address })
+                    .eq('email', userEmail)
+                    .is('withdraw_address', null);
+
+                // 3. إرسال الطلب لجدول السحوبات (للمراجعة)
+                await _supabase.from('withdrawals').insert([{
+                    user_email: userEmail,
+                    amount: amount,
+                    address: address,
+                    status: 'pending' // قيد الانتظار لموافقة الآدمن
+                }]);
+
+                showToast("تم إرسال طلب السحب وخصم المبلغ بنجاح ✅", "success");
+                setTimeout(() => window.location.href = 'dashboard.html', 2000);
+
+            } catch (err) {
+                showToast("حدث خطأ تقني، يرجى المحاولة لاحقاً");
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
