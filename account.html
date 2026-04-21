@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QCT | مركز القيادة (حسابي)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .data-syncing {
+            color: transparent !important;
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.1), rgba(168, 85, 247, 0.4), rgba(6, 182, 212, 0.1));
+            background-size: 200% 100%;
+            animation: data-sync 1.5s infinite linear;
+            border-radius: 4px;
+        }
+        @keyframes data-sync { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+        
+        .avatar-glow { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); animation: pulse-avatar 3s infinite alternate; }
+        @keyframes pulse-avatar { 100% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8); } }
+
+        /* أنيميشن نبض خفيف لأيقونة الدعم */
+        .support-pulse { animation: support-icon-pulse 2s infinite; }
+        @keyframes support-icon-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* تصميم مخصص لزر تليجرام الاحترافي */
+        .telegram-btn {
+            background: linear-gradient(135deg, #54a9eb 0%, #2980b9 100%);
+            box-shadow: 0 4px 15px rgba(84, 169, 235, 0.3);
+            transition: all 0.3s ease;
+        }
+        .telegram-btn:hover {
+            box-shadow: 0 6px 20px rgba(84, 169, 235, 0.5);
+            transform: translateY(-2px);
+        }
+        .telegram-btn:active {
+            transform: translateY(1px) scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ultimateLoader" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#020617] transition-all duration-700">
+        <div class="relative w-24 h-24 flex items-center justify-center mb-8">
+            <div class="absolute inset-0 rounded-full border-t-2 border-r-2 border-cyan-500 animate-spin opacity-80"></div>
+            <div class="absolute inset-3 rounded-full border-b-2 border-l-2 border-purple-500 animate-[spin_1.5s_reverse_infinite] opacity-60"></div>
+            <div class="w-10 h-10 bg-cyan-500/20 rounded-full animate-ping absolute"></div>
+            <span class="text-xl font-black text-white tracking-widest z-10">QCT</span>
+        </div>
+        <div class="text-[9px] text-cyan-400 font-mono tracking-[0.3em] uppercase animate-pulse" id="loaderText">ACCESSING SECURE MAINFRAME...</div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-12 sm:top-14 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="pt-6 px-6 mb-6 relative z-10">
+        <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 tracking-wider">مركز القيادة</h2>
+        <p class="text-[10px] text-gray-400 font-mono mt-1">User Command Center</p>
+    </div>
+
+    <div class="px-4 mb-6 relative z-10">
+        <div class="glass-card p-6 flex flex-col items-center border-t-4 border-purple-500 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-600 to-purple-600 flex items-center justify-center text-2xl font-black text-white mb-4 avatar-glow border-2 border-[#020617]" id="userAvatar">
+                ?
+            </div>
+            
+            <h3 class="text-lg font-black text-white tracking-widest font-mono data-syncing mb-1" id="profileEmail">---------</h3>
+            <div class="bg-black/50 border border-white/5 px-4 py-1.5 rounded-full mb-4">
+                <span class="text-[10px] text-cyan-400 font-bold uppercase data-syncing" id="profilePlan">LOADING...</span>
+            </div>
+
+            <div class="w-full bg-black/30 rounded-xl p-3 flex justify-between items-center border border-white/5">
+                <span class="text-[9px] text-gray-500 uppercase tracking-widest">معرف العقدة (UID)</span>
+                <span class="text-xs font-black text-purple-400 font-mono data-syncing" id="profileUID">SYNCING...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 mb-6 relative z-10">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="glass-card p-5 text-center border-b-2 border-cyan-500">
+                <p class="text-[9px] text-gray-400 font-bold uppercase mb-2">المحفظة السحابية</p>
+                <div class="text-2xl font-black text-white flex items-center justify-center gap-1">
+                    <span class="text-sm text-gray-500">$</span><span id="accountBalance">0.00</span>
+                </div>
+            </div>
+            <div class="glass-card p-5 text-center border-b-2 border-green-500">
+                <p class="text-[9px] text-gray-400 font-bold uppercase mb-2">أرباح الشبكة</p>
+                <div class="text-2xl font-black text-green-400 flex items-center justify-center gap-1">
+                    <span class="text-sm text-green-600">$</span><span id="accountProfits">0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 mb-6 relative z-10">
+        <div class="glass-card p-6 border-l-4 border-cyan-500 relative overflow-hidden">
+            <div class="absolute -bottom-10 -right-10 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="flex items-center gap-4 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl support-pulse shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                    🎧
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-white tracking-wide">مركز الدعم والاتصال</h3>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Secure Support Channel</p>
+                </div>
+            </div>
+            
+            <p class="text-[11px] text-gray-300 leading-relaxed mb-5 bg-black/20 p-3 rounded-lg border border-white/5">
+                هل تواجه أي بروتوكول خطأ أو تحتاج إلى مساعدة فنية في عقدتك؟ فريق الدعم لدينا متصل على مدار الساعة للرد على استفساراتك عبر قناتنا الآمنة على تليجرام.
+            </p>
+
+            <a href="https://t.me/SNZ_1_bot" target="_blank" class="telegram-btn w-full flex items-center justify-center gap-3 py-3.5 rounded-xl text-white active:scale-95 transition-all">
+                <svg class="w-5 h-5 fill-white" viewBox="0 0 24 24">
+                    <path d="M11.944 0C5.356 0 0 5.356 0 11.944c0 6.589 5.356 11.944 11.944 11.944 6.589 0 11.944-5.355 11.944-11.944C23.888 5.356 18.533 0 11.944 0zm5.82 7.746l-2.016 9.503c-.15.674-.551.838-1.117.518l-3.078-2.267-1.485 1.428c-.164.164-.303.303-.621.303l.221-3.136 5.71-5.158c.248-.221-.054-.344-.381-.127L8.038 12.33 4.992 11.38c-.664-.207-.674-.664.139-.98l11.9-4.588c.551-.207 1.033.123.833.934z"/>
+                </svg>
+                <span class="text-xs font-black tracking-widest uppercase">الاتصال بالدعم الفني (SNZ)</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="px-4 mb-28 relative z-10">
+        <div class="glass-card p-6 border-l-4 border-red-500">
+            <h3 class="text-sm font-black mb-4 text-white flex items-center gap-2">
+                <span>🔐</span> المركز الأمني (Security)
+            </h3>
+            
+            <div class="space-y-3 mb-6">
+                <div>
+                    <label class="text-[9px] text-gray-400 uppercase tracking-widest mb-1 block">كلمة المرور الجديدة</label>
+                    <input type="password" id="newPassword" placeholder="••••••••" class="w-full cyber-input rounded-xl p-3 text-xs text-center text-white font-mono outline-none">
+                </div>
+                <div>
+                    <label class="text-[9px] text-gray-400 uppercase tracking-widest mb-1 block">تأكيد كلمة المرور</label>
+                    <input type="password" id="confirmPassword" placeholder="••••••••" class="w-full cyber-input rounded-xl p-3 text-xs text-center text-white font-mono outline-none">
+                </div>
+            </div>
+
+            <button onclick="updatePassword()" id="updatePassBtn" class="w-full bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-500 hover:to-purple-500 py-3.5 rounded-xl font-black text-xs active:scale-95 transition-all shadow-[0_5px_15px_rgba(239,68,68,0.3)]">
+                تحديث بروتوكول الأمان
+            </button>
+            
+            <button onclick="logout()" class="w-full mt-4 bg-white/5 border border-white/10 text-gray-400 hover:text-white py-3 rounded-xl text-xs font-bold active:scale-95 transition-all">
+                تسجيل الخروج بأمان
+            </button>
+        </div>
+    </div>
+
+    <div class="bottom-nav fixed bottom-0 left-0 right-0 z-50 pb-safe">
+        <div class="flex justify-around items-center p-3">
+            <button onclick="location.href='dashboard.html'" class="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors cursor-pointer">
+                <span class="text-lg">📈</span><span class="text-[9px]">التداول</span>
+            </button>
+            <button onclick="location.href='plans.html'" class="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors cursor-pointer">
+                <span class="text-lg">💼</span><span class="text-[9px]">الباقات</span>
+            </button>
+            <button onclick="location.href='team.html'" class="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors cursor-pointer">
+                <span class="text-lg">👥</span><span class="text-[9px]">الفريق</span>
+            </button>
+            
+            <button class="flex flex-col items-center gap-1 text-cyan-400 transform transition-transform active:scale-90 relative group cursor-default">
+                <div class="absolute inset-0 bg-cyan-500/20 rounded-full scale-150 transition-transform duration-300 -z-10 blur-md"></div>
+                <span class="text-lg drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">⚙️</span><span class="text-[9px] font-bold">حسابي</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="config.js"></script>
+    <script>
+        const isLocalFile = window.location.protocol === 'file:' || window.location.protocol === 'content:';
+        let userEmail = localStorage.getItem('currentUserEmail');
+
+        // دوال الإشعارات والأنيميشن
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl backdrop-blur-md border shadow-2xl text-[11px] font-bold transform transition-all duration-300 translate-y-[-20px] flex items-center gap-2 ${type === 'success' ? 'bg-green-900/90 border-green-500 text-green-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '🛑'}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-[-20px]'));
+            setTimeout(() => { toast.classList.add('translate-y-[-20px]'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function animateNumber(id, finalValue) {
+            const element = document.getElementById(id);
+            if (!element) return;
+            let start = 0;
+            const duration = 1500; 
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentVal = start + (finalValue - start) * easeOut;
+                element.innerText = currentVal.toFixed(2);
+                
+                if (progress < 1) requestAnimationFrame(update);
+                else element.innerText = parseFloat(finalValue).toFixed(2);
+            }
+            if(finalValue > 0) requestAnimationFrame(update);
+            else element.innerText = "0.00";
+        }
+
+        window.addEventListener('load', async () => {
+            if(!userEmail) {
+                if(isLocalFile) userEmail = "architect@local.dev";
+                else { window.location.href = 'index.html'; return; }
+            }
+            
+            await loadAccountData();
+
+            const loader = document.getElementById('ultimateLoader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        });
+
+        // --- جلب بيانات الحساب ---
+        async function loadAccountData() {
+            try {
+                const { data, error } = await _supabase.from('users').select('balance, plan, uid, team_profit').eq('email', userEmail).single();
+                
+                if(data && !error) {
+                    // إزالة تأثير الوميض (Skeleton Loading)
+                    document.querySelectorAll('.data-syncing').forEach(el => el.classList.remove('data-syncing'));
+
+                    // تعبئة البيانات
+                    const username = userEmail.split('@')[0];
+                    document.getElementById('profileEmail').innerText = userEmail;
+                    document.getElementById('userAvatar').innerText = username.charAt(0).toUpperCase();
+                    document.getElementById('profilePlan').innerText = `PLAN: ${data.plan}`;
+                    document.getElementById('profileUID').innerText = data.uid || 'لم يتم التوليد';
+                    
+                    // تشغيل العدادات المالية
+                    animateNumber('accountBalance', parseFloat(data.balance));
+                    animateNumber('accountProfits', parseFloat(data.team_profit || 0));
+                } else if (userEmail === "architect@local.dev") {
+                    document.querySelectorAll('.data-syncing').forEach(el => el.classList.remove('data-syncing'));
+                    document.getElementById('profileEmail').innerText = "architect@local.dev";
+                    document.getElementById('userAvatar').innerText = "A";
+                    document.getElementById('profilePlan').innerText = "DEV_MODE";
+                    document.getElementById('profileUID').innerText = "QCT-ADMIN";
+                    animateNumber('accountBalance', 999.50);
+                    animateNumber('accountProfits', 150.00);
+                }
+            } catch(e) { 
+                console.error("Account Data Error", e); 
+            }
+        }
+
+        // --- نظام تغيير كلمة المرور ---
+        async function updatePassword() {
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('updatePassBtn');
+
+            if(!newPass || !confirmPass) return showToast("يرجى ملء جميع الحقول", 'error');
+            if(newPass.length < 6) return showToast("كلمة المرور يجب أن تكون 6 أحرف على الأقل", 'error');
+            if(newPass !== confirmPass) return showToast("كلمتا المرور غير متطابقتين", 'error');
+
+            if(userEmail === "architect@local.dev") {
+                showToast("تم تحديث كلمة المرور (وضع المطور)", 'success');
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                return;
+            }
+
+            btn.innerText = "جاري التشفير...";
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const { error } = await _supabase.from('users').update({ password: newPass }).eq('email', userEmail);
+                
+                if(!error) {
+                    showToast("تم تحديث بروتوكول الأمان بنجاح!", 'success');
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    throw error;
+                }
+            } catch(e) {
+                showToast("فشل الاتصال بالخادم، يرجى المحاولة لاحقاً", 'error');
+            } finally {
+                btn.innerText = "تحديث بروتوكول الأمان";
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function logout() { 
+            localStorage.removeItem('currentUserEmail'); 
+            window.location.href = 'index.html'; 
+        }
+    </script>
+</body>
+</html>
