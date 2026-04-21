@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCT | مركز القيادة الأعلى (Admin)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        body { background: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(6, 182, 212, 0.15); }
+        .glass-panel { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .hidden-panel { display: none !important; }
+        .cyber-input { background: rgba(0,0,0,0.5) !important; color: white !important; border: 1px solid rgba(6, 182, 212, 0.3); outline: none; }
+        .cyber-input:focus { border-color: #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        
+        .nav-item.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2), transparent); border-right: 3px solid #06b6d4; color: #06b6d4; }
+    </style>
+</head>
+<body class="h-screen flex">
+
+    <div id="loginOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617] backdrop-blur-xl">
+        <div class="glass p-10 rounded-3xl w-full max-w-sm text-center shadow-[0_0_50px_rgba(6,182,212,0.1)] border-t-4 border-cyan-500">
+            <div class="text-5xl mb-6 drop-shadow-[0_0_15px_rgba(6,182,212,0.5)]">🦂</div>
+            <h2 class="text-xl font-black mb-6 uppercase tracking-widest text-cyan-400">The Architect Access</h2>
+            <input type="password" id="adminPassInput" placeholder="أدخل مفتاح التشفير" class="w-full cyber-input p-4 rounded-xl mb-4 text-center">
+            <button onclick="checkAdminPassword()" class="w-full bg-gradient-to-r from-cyan-600 to-purple-600 p-4 rounded-xl font-black shadow-lg hover:shadow-cyan-500/25 active:scale-95 transition-all">تهيئة النواة</button>
+            <p id="loginMsg" class="text-red-500 text-xs mt-4 font-bold"></p>
+        </div>
+    </div>
+
+    <aside id="sidebar" class="w-64 glass h-full flex flex-col hidden-panel z-50 border-l border-white/5 shrink-0">
+        <div class="p-6 text-center border-b border-white/5">
+            <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-wider">QCT ADMIN</h1>
+            <p class="text-[9px] text-gray-500 font-mono mt-1">Ultimate Control Node</p>
+        </div>
+        <nav class="flex-1 py-4 flex flex-col gap-2">
+            <button onclick="switchTab('dashboard')" class="nav-item active text-right px-6 py-3 text-sm font-bold text-gray-300 hover:text-cyan-400 transition-colors">📊 لوحة القيادة</button>
+            <button onclick="switchTab('users')" class="nav-item text-right px-6 py-3 text-sm font-bold text-gray-300 hover:text-cyan-400 transition-colors">👥 إدارة المستخدمين</button>
+            <button onclick="switchTab('financial')" class="nav-item text-right px-6 py-3 text-sm font-bold text-gray-300 hover:text-cyan-400 transition-colors">💰 المركز المالي</button>
+            <button onclick="switchTab('signals')" class="nav-item text-right px-6 py-3 text-sm font-bold text-gray-300 hover:text-cyan-400 transition-colors">📈 إشارات التداول</button>
+            <button onclick="switchTab('support')" class="nav-item text-right px-6 py-3 text-sm font-bold text-gray-300 hover:text-cyan-400 transition-colors flex justify-between">
+                <span>🎧 الدعم المباشر</span>
+                <span id="supportBadge" class="bg-red-500 text-white text-[9px] px-2 py-0.5 rounded-full hidden">!</span>
+            </button>
+        </nav>
+        <div class="p-6 border-t border-white/5">
+            <button onclick="logoutAdmin()" class="w-full bg-red-500/10 text-red-500 hover:bg-red-500/20 py-3 rounded-xl text-xs font-black transition-colors border border-red-500/20">إغلاق النظام</button>
+        </div>
+    </aside>
+
+    <main id="mainContent" class="flex-1 h-full overflow-y-auto hidden-panel relative">
+        <div class="p-8 max-w-7xl mx-auto">
+            
+            <header class="flex justify-between items-center mb-8">
+                <h2 id="pageTitle" class="text-2xl font-black text-white">لوحة القيادة</h2>
+                <button onclick="refreshAllData()" class="bg-white/5 hover:bg-white/10 p-2.5 rounded-xl border border-white/10 transition-colors">🔄 تحديث البيانات</button>
+            </header>
+
+            <section id="tab-dashboard" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div class="glass p-6 rounded-2xl border-r-4 border-cyan-500">
+                        <p class="text-gray-500 text-[10px] font-bold uppercase">إجمالي المستخدمين</p>
+                        <h3 id="statUsers" class="text-3xl font-black text-white mt-1">0</h3>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-r-4 border-purple-500">
+                        <p class="text-gray-500 text-[10px] font-bold uppercase">إجمالي الأرصدة المتداولة</p>
+                        <h3 id="statBalances" class="text-3xl font-black text-purple-400 mt-1">$0.00</h3>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-r-4 border-green-500">
+                        <p class="text-gray-500 text-[10px] font-bold uppercase">طلبات شحن معلقة</p>
+                        <h3 id="statDep" class="text-3xl font-black text-green-400 mt-1">0</h3>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-r-4 border-yellow-500">
+                        <p class="text-gray-500 text-[10px] font-bold uppercase">طلبات سحب معلقة</p>
+                        <h3 id="statWith" class="text-3xl font-black text-yellow-400 mt-1">0</h3>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-users" class="tab-content hidden-panel">
+                <div class="glass rounded-2xl overflow-hidden">
+                    <div class="p-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
+                        <h3 class="font-black text-sm">قاعدة بيانات العقد (Users)</h3>
+                        <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="ابحث بالإيميل أو كود الإحالة..." class="cyber-input text-xs px-4 py-2 rounded-lg w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-black/40 text-gray-400">
+                                <tr><th class="p-4">الإيميل</th><th class="p-4">كود الإحالة (UID)</th><th class="p-4">الرصيد الأساسي</th><th class="p-4">أرباح الفريق</th><th class="p-4">الباقة</th><th class="p-4 text-left">لوحة التحكم</th></tr>
+                            </thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-financial" class="tab-content hidden-panel space-y-6">
+                <div class="glass rounded-2xl overflow-hidden border-l-2 border-green-500">
+                    <div class="p-4 border-b border-white/5 bg-black/20"><h3 class="font-black text-sm text-green-400">📥 طلبات الشحن بانتظار الموافقة</h3></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-black/40 text-gray-400"><tr><th class="p-4">المستخدم</th><th class="p-4">المبلغ</th><th class="p-4">TXID</th><th class="p-4 text-left">إجراء</th></tr></thead>
+                            <tbody id="depositsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="glass rounded-2xl overflow-hidden border-l-2 border-yellow-500">
+                    <div class="p-4 border-b border-white/5 bg-black/20"><h3 class="font-black text-sm text-yellow-400">📤 طلبات السحب بانتظار التحويل</h3></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-black/40 text-gray-400"><tr><th class="p-4">المستخدم</th><th class="p-4">المبلغ</th><th class="p-4">المحفظة</th><th class="p-4 text-left">إجراء</th></tr></thead>
+                            <tbody id="withdrawalsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-signals" class="tab-content hidden-panel">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass rounded-2xl p-6 h-fit">
+                        <h3 class="font-black text-sm mb-4 text-cyan-400">➕ حقن إشارة جديدة</h3>
+                        <input type="text" id="newSignalCode" placeholder="كود الإشارة (مثال: SNZ-100)" class="w-full cyber-input p-3 rounded-xl mb-4 text-xs">
+                        <button onclick="addSignal()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold text-xs transition-all">إضافة للقاعدة</button>
+                    </div>
+                    <div class="glass rounded-2xl overflow-hidden md:col-span-2">
+                        <div class="p-4 border-b border-white/5 bg-black/20"><h3 class="font-black text-sm">📡 الإشارات النشطة في النظام</h3></div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-xs">
+                                <thead class="bg-black/40 text-gray-400"><tr><th class="p-4">ID</th><th class="p-4">كود الإشارة</th><th class="p-4">تاريخ الإنشاء</th><th class="p-4 text-left">حذف</th></tr></thead>
+                                <tbody id="signalsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-support" class="tab-content hidden-panel h-[80vh]">
+                <div class="glass rounded-2xl h-full flex overflow-hidden">
+                    <div class="w-1/3 border-l border-white/5 bg-black/20 flex flex-col">
+                        <div class="p-4 border-b border-white/5"><h3 class="font-black text-xs">المحادثات النشطة</h3></div>
+                        <div id="chatUserList" class="flex-1 overflow-y-auto">
+                            </div>
+                    </div>
+                    <div class="w-2/3 flex flex-col bg-[#020617]/50 relative">
+                        <div id="activeChatHeader" class="p-4 border-b border-white/5 bg-black/40 font-bold text-sm text-cyan-400 hidden">اختر محادثة</div>
+                        <div id="adminChatMessages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-20">
+                            <div class="text-center text-gray-600 text-xs mt-10 font-mono">يرجى تحديد مستخدم من القائمة للرد عليه.</div>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 p-3 bg-black/80 backdrop-blur-md border-t border-white/5 flex gap-2">
+                            <input type="text" id="adminReplyInput" disabled placeholder="اكتب ردك..." class="flex-1 cyber-input rounded-xl p-3 text-xs outline-none">
+                            <button onclick="sendAdminReply()" id="adminReplyBtn" disabled class="bg-purple-600 hover:bg-purple-500 text-white px-6 rounded-xl font-bold text-xs disabled:opacity-50 transition-all">إرسال</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="editModal" class="fixed inset-0 z-[200] hidden-panel flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="glass p-6 rounded-2xl w-full max-w-sm border border-cyan-500/30 shadow-2xl transform scale-95 transition-transform">
+            <h3 id="modalTitle" class="text-lg font-black text-cyan-400 mb-4">تعديل بيانات</h3>
+            <input type="hidden" id="modalEmail">
+            <input type="hidden" id="modalField">
+            <label id="modalLabel" class="text-[10px] text-gray-400 mb-1 block"></label>
+            <input type="text" id="modalInput" class="w-full cyber-input p-3 rounded-xl mb-6 text-sm" dir="ltr">
+            <div class="flex gap-2">
+                <button onclick="saveEdit()" class="flex-1 bg-cyan-600 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500">حفظ التغييرات</button>
+                <button onclick="closeEditModal()" class="bg-gray-700 py-2.5 px-6 rounded-xl text-xs font-bold hover:bg-gray-600">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات النواة
+        const SUPABASE_URL = 'https://joceogpjhizklghwhqbk.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_FEkVorgPaAOgaS3zxSa9gw_W1fS5oE2';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // متغيرات النظام
+        let allUsers = [];
+        let activeChatEmail = null;
+
+        // ==========================================
+        // 1. نظام الدخول والتهيئة
+        // ==========================================
+        window.addEventListener('load', () => {
+            if (sessionStorage.getItem('isAdmin') === 'true') unlockSystem();
+        });
+
+        async function checkAdminPassword() {
+            const input = document.getElementById('adminPassInput').value;
+            try {
+                const { data, error } = await _supabase.from('admin_settings').select('admin_password').eq('id', 1).single();
+                if (data && data.admin_password === input) {
+                    sessionStorage.setItem('isAdmin', 'true');
+                    unlockSystem();
+                } else {
+                    // إذا لم يكن جدول admin_settings موجوداً، نعتمد كلمة مرور ثابتة (مؤقتاً)
+                    if(input === "114477" || input === "TheArchitect") {
+                        sessionStorage.setItem('isAdmin', 'true');
+                        unlockSystem();
+                    } else {
+                        document.getElementById('loginMsg').innerText = "❌ Access Denied.";
+                    }
+                }
+            } catch(e) { document.getElementById('loginMsg').innerText = "⚠️ خطأ في الاتصال بالقاعدة."; }
+        }
+
+        function unlockSystem() {
+            document.getElementById('loginOverlay').classList.add('hidden-panel');
+            document.getElementById('sidebar').classList.remove('hidden-panel');
+            document.getElementById('mainContent').classList.remove('hidden-panel');
+            refreshAllData();
+            initAdminRealtimeChat();
+        }
+
+        function logoutAdmin() { sessionStorage.clear(); location.reload(); }
+
+        // ==========================================
+        // 2. نظام التنقل
+        // ==========================================
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden-panel'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden-panel');
+            
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const titles = { 'dashboard': 'لوحة القيادة', 'users': 'قاعدة العقد (Users)', 'financial': 'المركز المالي', 'signals': 'إدارة الإشارات', 'support': 'مركز القيادة والاتصال' };
+            document.getElementById('pageTitle').innerText = titles[tabId];
+            
+            if(tabId === 'support') loadChatUsersList(); // تحديث الدردشة عند الدخول
+        }
+
+        // ==========================================
+        // 3. محرك جلب البيانات المركزي
+        // ==========================================
+        async function refreshAllData() {
+            fetchUsers();
+            fetchFinancials();
+            fetchSignals();
+        }
+
+        // ==========================================
+        // 4. إدارة المستخدمين (الأرصدة، الإحالة، الباقة)
+        // ==========================================
+        async function fetchUsers() {
+            const { data, error } = await _supabase.from('users').select('*').order('created_at', { ascending: false });
+            if(!data) return;
+            allUsers = data;
+            
+            // تحديث الإحصائيات
+            document.getElementById('statUsers').innerText = data.length;
+            const total = data.reduce((acc, u) => acc + (parseFloat(u.balance) || 0), 0);
+            document.getElementById('statBalances').innerText = `$${total.toFixed(2)}`;
+
+            renderUsersTable(data);
+        }
+
+        function renderUsersTable(data) {
+            document.getElementById('usersTableBody').innerHTML = data.map(u => {
+                const mail = u.Email || u.email;
+                return `
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-mono text-[10px] text-gray-300">${mail}</td>
+                    <td class="p-4 text-[10px] text-cyan-400 cursor-pointer hover:underline" onclick="openModal('${mail}', 'uid', '${u.uid || ''}', 'تعديل كود الإحالة (UID)')">${u.uid || 'N/A'} ✎</td>
+                    <td class="p-4 text-green-400 font-bold cursor-pointer hover:underline" onclick="openModal('${mail}', 'balance', '${u.balance || 0}', 'تعديل الرصيد الأساسي ($)')">$${(u.balance || 0).toFixed(2)} ✎</td>
+                    <td class="p-4 text-purple-400 font-bold cursor-pointer hover:underline" onclick="openModal('${mail}', 'team_profit', '${u.team_profit || 0}', 'تعديل أرباح الفريق ($)')">$${(u.team_profit || 0).toFixed(2)} ✎</td>
+                    <td class="p-4"><span class="bg-white/10 px-2 py-1 rounded text-[9px] cursor-pointer hover:bg-white/20" onclick="openModal('${mail}', 'plan', '${u.plan || 'Free'}', 'تعديل الباقة (VIP)')">${u.plan || 'Free'} ✎</span></td>
+                    <td class="p-4 text-left">
+                        <button onclick="deleteUser('${mail}')" class="text-red-500 hover:text-red-400 text-xs bg-red-500/10 px-3 py-1 rounded">حذف</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function filterUsers() {
+            const q = document.getElementById('userSearch').value.toLowerCase();
+            const filtered = allUsers.filter(u => 
+                (u.Email || u.email || '').toLowerCase().includes(q) || 
+                (u.uid || '').toLowerCase().includes(q)
+            );
+            renderUsersTable(filtered);
+        }
+
+        // --- نظام المودال السريع للتعديل ---
+        function openModal(email, field, currentValue, title) {
+            document.getElementById('modalEmail').value = email;
+            document.getElementById('modalField').value = field;
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalInput').value = currentValue;
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden-panel');
+            setTimeout(() => modal.querySelector('div').classList.remove('scale-95'), 10);
+            document.getElementById('modalInput').focus();
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden-panel'), 150);
+        }
+
+        async function saveEdit() {
+            const email = document.getElementById('modalEmail').value;
+            const field = document.getElementById('modalField').value;
+            let val = document.getElementById('modalInput').value;
+            
+            // تحويل الأرقام إذا كان الحقل مالياً
+            if(field === 'balance' || field === 'team_profit') val = parseFloat(val) || 0;
+
+            const updateData = {};
+            updateData[field] = val;
+
+            // تحديث باستخدام Email أو email (حسب هيكل القاعدة)
+            let { error } = await _supabase.from('users').update(updateData).eq('Email', email);
+            if(error) await _supabase.from('users').update(updateData).eq('email', email); // محاولة أخرى
+
+            closeEditModal();
+            fetchUsers();
+        }
+
+        async function deleteUser(email) {
+            if(confirm('هل أنت متأكد من حذف هذه العقدة (المستخدم) بالكامل؟')) {
+                await _supabase.from('users').delete().eq('Email', email);
+                await _supabase.from('users').delete().eq('email', email);
+                fetchUsers();
+            }
+        }
+
+        // ==========================================
+        // 5. المركز المالي (شحن وسحب)
+        // ==========================================
+        async function fetchFinancials() {
+            // الشحن
+            const { data: deps } = await _supabase.from('deposit_requests').select('*').eq('status', 'pending');
+            if(deps) {
+                document.getElementById('statDep').innerText = deps.length;
+                document.getElementById('depositsTableBody').innerHTML = deps.map(d => `
+                    <tr class="border-b border-white/5">
+                        <td class="p-3 text-[10px] text-gray-300">${d.email}</td>
+                        <td class="p-3 text-green-400 font-bold">$${d.amount}</td>
+                        <td class="p-3 text-[9px] font-mono text-gray-500">${d.txid || 'N/A'}</td>
+                        <td class="p-3 text-left">
+                            <button onclick="approveAction('deposit', '${d.id}', '${d.email}', ${d.amount})" class="bg-green-600/20 text-green-400 px-3 py-1 rounded text-xs hover:bg-green-600 hover:text-white">تأكيد الإيداع</button>
+                            <button onclick="rejectAction('deposit', '${d.id}')" class="bg-red-600/20 text-red-400 px-3 py-1 rounded text-xs ml-1">رفض</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // السحب
+            const { data: withs } = await _supabase.from('withdraws').select('*').eq('status', 'pending');
+            if(withs) {
+                document.getElementById('statWith').innerText = withs.length;
+                document.getElementById('withdrawalsTableBody').innerHTML = withs.map(w => `
+                    <tr class="border-b border-white/5">
+                        <td class="p-3 text-[10px] text-gray-300">${w.email}</td>
+                        <td class="p-3 text-yellow-400 font-bold">$${w.amount}</td>
+                        <td class="p-3 text-[9px] font-mono text-gray-500 max-w-[150px] truncate" title="${w.wallet}">${w.wallet}</td>
+                        <td class="p-3 text-left">
+                            <button onclick="approveAction('withdraw', '${w.id}')" class="bg-cyan-600/20 text-cyan-400 px-3 py-1 rounded text-xs hover:bg-cyan-600 hover:text-white">تم التحويل</button>
+                            <button onclick="rejectAction('withdraw', '${w.id}')" class="bg-red-600/20 text-red-400 px-3 py-1 rounded text-xs ml-1">رفض/إلغاء</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function approveAction(type, id, email, amount) {
+            if(!confirm('تأكيد العملية؟')) return;
+            if(type === 'deposit') {
+                await _supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', id);
+                // تحديث رصيد المستخدم
+                const { data } = await _supabase.from('users').select('balance').eq('Email', email).single();
+                let currentBal = data ? (parseFloat(data.balance) || 0) : 0;
+                await _supabase.from('users').update({ balance: currentBal + parseFloat(amount) }).eq('Email', email);
+            } else {
+                await _supabase.from('withdraws').update({ status: 'completed' }).eq('id', id);
+            }
+            fetchFinancials(); fetchUsers();
+        }
+
+        async function rejectAction(table, id) {
+            const t = table === 'deposit' ? 'deposit_requests' : 'withdraws';
+            if(confirm('هل تريد رفض وحذف هذا الطلب؟')) {
+                await _supabase.from(t).update({ status: 'rejected' }).eq('id', id);
+                fetchFinancials();
+            }
+        }
+
+        // ==========================================
+        // 6. إدارة الإشارات (Signals)
+        // ==========================================
+        async function fetchSignals() {
+            const { data } = await _supabase.from('signals').select('*').order('created_at', { ascending: false });
+            if(data) {
+                document.getElementById('signalsTableBody').innerHTML = data.map(s => `
+                    <tr class="border-b border-white/5">
+                        <td class="p-3 text-[9px] text-gray-500">${s.id}</td>
+                        <td class="p-3 font-bold text-cyan-400 tracking-wider">${s.code}</td>
+                        <td class="p-3 text-[10px] text-gray-400">${new Date(s.created_at || Date.now()).toLocaleDateString()}</td>
+                        <td class="p-3 text-left">
+                            <button onclick="deleteSignal(${s.id})" class="text-red-500 bg-red-500/10 px-3 py-1 rounded text-xs hover:bg-red-500 hover:text-white">حذف 🗑</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function addSignal() {
+            const code = document.getElementById('newSignalCode').value.trim().toUpperCase();
+            if(!code) return;
+            await _supabase.from('signals').insert([{ code: code }]);
+            document.getElementById('newSignalCode').value = '';
+            fetchSignals();
+        }
+
+        async function deleteSignal(id) {
+            if(confirm('حذف هذه الإشارة من القاعدة؟')) {
+                await _supabase.from('signals').delete().eq('id', id);
+                fetchSignals();
+            }
+        }
+
+        // ==========================================
+        // 7. الدعم المباشر الشامل (Admin Chat)
+        // ==========================================
+        async function loadChatUsersList() {
+            // جلب أحدث رسالة لكل مستخدم لتكوين القائمة
+            // (في SQL المتقدمة نستخدم Distinct، هنا سنقوم بتجميعها عبر JS للتبسيط والأمان المطلق)
+            const { data } = await _supabase.from('support_messages').select('user_email, created_at').order('created_at', { ascending: false });
+            
+            if(!data) return;
+            
+            const uniqueUsers = [...new Set(data.map(m => m.user_email))];
+            
+            const listHtml = uniqueUsers.map(email => `
+                <div onclick="openAdminChat('${email}')" class="p-3 border-b border-white/5 hover:bg-cyan-900/30 cursor-pointer flex items-center gap-3 transition-colors ${activeChatEmail === email ? 'bg-cyan-900/50 border-l-2 border-cyan-500' : ''}">
+                    <div class="w-8 h-8 rounded-full bg-cyan-600/20 text-cyan-400 flex items-center justify-center text-xs font-bold">${email.charAt(0).toUpperCase()}</div>
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-bold text-gray-200 truncate">${email}</p>
+                        <p class="text-[9px] text-gray-500">اضغط للرد</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('chatUserList').innerHTML = listHtml || '<p class="text-center text-xs text-gray-500 p-4">لا توجد محادثات</p>';
+        }
+
+        async function openAdminChat(email) {
+            activeChatEmail = email;
+            loadChatUsersList(); // لتحديث التحديد (اللون)
+            
+            document.getElementById('activeChatHeader').innerText = `💬 محادثة: ${email}`;
+            document.getElementById('activeChatHeader').classList.remove('hidden');
+            
+            const input = document.getElementById('adminReplyInput');
+            const btn = document.getElementById('adminReplyBtn');
+            input.disabled = false; btn.disabled = false;
+            
+            await loadAdminMessagesForUser(email);
+        }
+
+        async function loadAdminMessagesForUser(email) {
+            const { data } = await _supabase.from('support_messages').select('*').eq('user_email', email).order('created_at', { ascending: true });
+            
+            const container = document.getElementById('adminChatMessages');
+            if(!data || data.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-gray-500">لا توجد رسائل.</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(msg => {
+                const isAdmin = msg.sender === 'support';
+                const align = isAdmin ? 'self-start items-start' : 'self-end items-end';
+                const bg = isAdmin ? 'bg-purple-600/20 border border-purple-500/30 text-purple-100' : 'bg-cyan-600/20 border border-cyan-500/30 text-cyan-100';
+                const name = isAdmin ? 'أنت (Admin)' : 'المستخدم';
+
+                return `
+                    <div class="flex flex-col ${align} max-w-[80%]">
+                        <span class="text-[8px] text-gray-500 mb-1 px-1">${name}</span>
+                        <div class="${bg} p-3 rounded-xl text-xs break-words shadow-lg">${msg.text}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // التمرير للأسفل
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendAdminReply() {
+            if(!activeChatEmail) return;
+            const input = document.getElementById('adminReplyInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            input.disabled = true;
+
+            const { error } = await _supabase.from('support_messages').insert([{
+                user_email: activeChatEmail,
+                text: text,
+                sender: 'support'
+            }]);
+
+            if(!error) {
+                input.value = '';
+                // سيتم عرض الرسالة تلقائياً بفضل نظام Realtime
+            }
+            input.disabled = false;
+            input.focus();
+        }
+
+        document.getElementById('adminReplyInput').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') sendAdminReply();
+        });
+
+        // الاستماع المباشر لرسائل الدعم
+        function initAdminRealtimeChat() {
+            _supabase
+                .channel('admin_support_channel')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, payload => {
+                    // إشعار بصري للمدير
+                    if(payload.new.sender === 'user') {
+                        document.getElementById('supportBadge').classList.remove('hidden');
+                    }
+                    
+                    // إذا كان المدير فاتح نفس محادثة المستخدم، أضف الرسالة فوراً
+                    if(activeChatEmail === payload.new.user_email) {
+                        loadAdminMessagesForUser(activeChatEmail);
+                    }
+                    loadChatUsersList(); // تحديث ترتيب القائمة
+                })
+                .subscribe();
+        }
+
+    </script>
+</body>
+</html>
