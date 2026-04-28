@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SNZ | مصفوفة العقود الاحترافية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; padding-bottom: 110px; padding-top: 35px; min-height: 100dvh; }
+        
+        /* تأثيرات الزجاج السيبراني */
+        .glass-card { 
+            background: rgba(15, 23, 42, 0.75); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 1.8rem; 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .glass-card:hover { transform: translateY(-8px); border-color: rgba(6, 182, 212, 0.4); }
+
+        /* الأنيميشن والشريط الإخباري */
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        .ticker-wrap { width: 100%; overflow: hidden; background: rgba(2, 6, 23, 0.95); border-bottom: 1px solid rgba(6, 182, 212, 0.15); position: fixed; top: 0; z-index: 50; height: 32px; }
+        .ticker-content { display: flex; white-space: nowrap; animation: ticker 35s linear infinite; }
+
+        /* شريط التنقل السفلي */
+        .bottom-nav { background: rgba(2, 6, 23, 0.9); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        /* زر لامع */
+        .glow-btn { position: relative; overflow: hidden; }
+        .glow-btn::after { content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent); transform: rotate(45deg); animation: shine 4s infinite; }
+        @keyframes shine { 0% { left: -150%; } 100% { left: 150%; } }
+
+        .btn-loading { opacity: 0.6; pointer-events: none; filter: grayscale(0.8); }
+        .modal-overlay { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px); transition: all 0.3s; }
+    </style>
+</head>
+<body class="relative">
+
+    <div id="ultimateLoader" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#020617] transition-all duration-700">
+        <div class="relative w-24 h-24 flex items-center justify-center mb-8">
+            <div class="absolute inset-0 rounded-full border-t-2 border-r-2 border-cyan-500 animate-spin"></div>
+            <div class="absolute inset-3 rounded-full border-b-2 border-l-2 border-orange-500 animate-[spin_2s_reverse_infinite] opacity-60"></div>
+            <span class="text-xl font-black text-white tracking-widest z-10 drop-shadow-lg">SNZ</span>
+        </div>
+        <div class="text-[9px] text-cyan-400 font-mono uppercase tracking-[0.3em] animate-pulse">Initialising Secure Node...</div>
+    </div>
+
+    <div class="ticker-wrap flex items-center">
+        <div class="ticker-content gap-12 text-[10px] font-mono">
+            <span class="text-cyan-400 font-bold">● SMART CONTRACT POOL: ACTIVE</span>
+            <span class="text-orange-400 font-bold">● CAPITAL FREEZING: ENABLED</span>
+            <span class="text-green-400 font-bold">● 24H DISTRIBUTION: IN PROGRESS</span>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-12 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="pt-6 px-6 mb-8 relative z-10">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h2 class="text-3xl font-black text-white tracking-tighter">باقات النسخ</h2>
+                <p class="text-[10px] text-gray-500 font-mono mt-1 uppercase">Select Your Investment Node</p>
+            </div>
+            <div class="bg-black/40 border border-cyan-500/20 p-3 rounded-2xl text-left backdrop-blur-md">
+                <p class="text-[8px] text-cyan-400 font-bold uppercase tracking-widest mb-1">رأس المال</p>
+                <p class="text-lg font-black text-white font-mono">$<span id="currentBalance">0.00</span></p>
+            </div>
+        </div>
+        
+        <div class="glass-card p-4 flex items-center justify-between border-cyan-500/20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-xl shadow-lg">💼</div>
+                <div>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold tracking-widest">خطة العمل النشطة</p>
+                    <p class="text-sm font-black text-cyan-400" id="currentPlanName">جاري المزامنة...</p>
+                </div>
+            </div>
+            <span class="text-[9px] bg-green-500/20 text-green-400 px-2 py-1 rounded font-bold animate-pulse">ON-CHAIN</span>
+        </div>
+    </div>
+
+    <div class="px-5 space-y-8 mb-28 relative z-10" id="plansContainer">
+        </div>
+
+    <div id="purchaseModal" class="fixed inset-0 z-[100] modal-overlay hidden flex items-center justify-center opacity-0">
+        <div class="glass-card w-[88%] max-w-sm p-7 transform scale-95 transition-all duration-300 border-t-4 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)]" id="modalContent">
+            <div class="w-20 h-20 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-5 text-3xl border border-cyan-500/20">💎</div>
+            <h3 class="text-xl font-black text-white mb-2 text-center uppercase tracking-tight">تأكيد حجز الباقة</h3>
+            <p class="text-[11px] text-gray-400 text-center mb-8 leading-relaxed px-2">أنت بصدد تفعيل باقة <span id="modalPlanName" class="text-cyan-400 font-bold underline">--</span>. سيتم تجميد رأس المال نهائياً للتداول وتحويل الأرباح لمحفظة السحب.</p>
+            <div class="flex gap-4">
+                <button onclick="closeModal()" class="flex-1 py-4 rounded-2xl text-[10px] font-bold text-gray-400 bg-white/5 border border-white/5 active:scale-95 transition-all">تراجع</button>
+                <button onclick="confirmPurchase()" id="confirmBtn" class="flex-1 py-4 rounded-2xl text-[10px] font-black text-white bg-gradient-to-r from-cyan-600 to-blue-600 shadow-xl active:scale-95 glow-btn">تأكيد العقد</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-50 pb-safe">
+        <div class="flex justify-around items-center p-4">
+            <button onclick="location.href='dashboard.html'" class="flex flex-col items-center gap-1 text-gray-500">
+                <span class="text-xl">📈</span><span class="text-[9px]">التداول</span>
+            </button>
+            <div class="flex flex-col items-center gap-1 text-cyan-400 relative">
+                <div class="absolute -top-1 w-10 h-1 bg-cyan-400 rounded-full shadow-[0_0_10px_#22d3ee]"></div>
+                <span class="text-xl drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">💼</span><span class="text-[9px] font-bold">الباقات</span>
+            </div>
+            <button onclick="location.href='team.html'" class="flex flex-col items-center gap-1 text-gray-500">
+                <span class="text-xl">👥</span><span class="text-[9px]">الفريق</span>
+            </button>
+            <button onclick="location.href='account.html'" class="flex flex-col items-center gap-1 text-gray-500">
+                <span class="text-xl">⚙️</span><span class="text-[9px]">حسابي</span>
+            </button>
+        </div>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="config.js"></script>
+    <script>
+        let userBalance = 0;
+        let userEmail = localStorage.getItem('currentUserEmail') || "architect@local.dev";
+        let selectedPlanId = "";
+        let selectedPlanName = "";
+        let selectedPlanPrice = 0;
+
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-green-950/90 border-green-500 text-green-200' : 'bg-red-950/90 border-red-500 text-red-200';
+            toast.className = `px-5 py-4 rounded-2xl backdrop-blur-md border shadow-2xl text-[11px] font-bold transition-all duration-400 transform translate-y-[-20px] ${bg}`;
+            toast.innerHTML = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        window.addEventListener('load', async () => {
+            await loadUserData();
+            await loadPlans();
+            setTimeout(() => {
+                document.getElementById('ultimateLoader').style.opacity = '0';
+                setTimeout(() => document.getElementById('ultimateLoader').style.display = 'none', 700);
+            }, 1200);
+        });
+
+        async function loadUserData() {
+            const { data } = await _supabase.from('users').select('balance, plan').eq('email', userEmail).single();
+            if(data) {
+                userBalance = parseFloat(data.balance || 0);
+                document.getElementById('currentBalance').innerText = userBalance.toFixed(2);
+                document.getElementById('currentPlanName').innerText = data.plan || "غير نشط";
+            }
+        }
+
+        async function loadPlans() {
+            const container = document.getElementById('plansContainer');
+            // تحميل أول 3 باقات بناءً على الصورة ($30, $50, $60)
+            const { data: plans } = await _supabase.from('subscription_plans').select('*').order('price', {ascending: true}).limit(3);
+            
+            if(plans) {
+                container.innerHTML = plans.map(plan => {
+                    const dailyProfit = (plan.price * plan.daily_profit_rate).toFixed(2);
+                    const monthlyProfit = (dailyProfit * 30).toFixed(2);
+                    const theme = plan.name.includes('Free') ? 'from-green-600 to-teal-500' : 'from-blue-600 to-indigo-500';
+                    const border = plan.name.includes('Free') ? 'border-green-500/30' : 'border-blue-500/30';
+
+                    return `
+                    <div class="glass-card p-6 border-t-4 ${border} relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-3">
+                            <span class="text-[7px] font-mono text-white/20 uppercase tracking-[0.3em]">System.Node.Alpha</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-xl font-black text-white tracking-tight">${plan.name}</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">30 Days Cycle</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-3xl font-black text-white font-mono">$${plan.price}</p>
+                                <p class="text-[8px] text-cyan-400 font-bold uppercase tracking-widest mt-1">رأس المال</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3 mb-8">
+                            <div class="bg-black/40 p-3 rounded-2xl border border-white/5 text-center">
+                                <p class="text-[8px] text-gray-500 font-bold uppercase mb-1">الربح اليومي</p>
+                                <p class="text-sm font-black text-white">3%</p>
+                            </div>
+                            <div class="bg-black/40 p-3 rounded-2xl border border-white/5 text-center">
+                                <p class="text-[8px] text-gray-500 font-bold uppercase mb-1">صافي اليوم</p>
+                                <p class="text-sm font-black text-green-400 font-mono">$${dailyProfit}</p>
+                            </div>
+                            <div class="bg-black/40 p-3 rounded-2xl border border-white/5 text-center">
+                                <p class="text-[8px] text-gray-500 font-bold uppercase mb-1">إجمالي الشهر</p>
+                                <p class="text-sm font-black text-cyan-400 font-mono">$${monthlyProfit}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-8">
+                            <div class="flex items-center gap-3 text-[10px] text-gray-400 font-bold">
+                                <span class="text-cyan-500">✓</span> تجميد رأس المال وتداول آلي
+                            </div>
+                            <div class="flex items-center gap-3 text-[10px] text-gray-400 font-bold">
+                                <span class="text-cyan-500">✓</span> سحب الأرباح فورياً بدون قيود
+                            </div>
+                            <div class="flex items-center gap-3 text-[10px] text-gray-400 font-bold">
+                                <span class="text-cyan-500">✓</span> تحديث الرصيد كل 24 ساعة
+                            </div>
+                        </div>
+
+                        <button onclick="openModal('${plan.id}', '${plan.name}', ${plan.price})" 
+                                class="w-full bg-gradient-to-r ${theme} py-4.5 rounded-2xl text-[11px] font-black text-white shadow-xl active:scale-95 transition-all glow-btn">
+                            شراء وتفعيل الباقة
+                        </button>
+                    </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function openModal(id, name, price) {
+            selectedPlanId = id;
+            selectedPlanName = name;
+            selectedPlanPrice = price;
+            document.getElementById('modalPlanName').innerText = name;
+            const modal = document.getElementById('purchaseModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                document.getElementById('modalContent').classList.add('scale-100');
+            }, 50);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('purchaseModal');
+            modal.classList.remove('opacity-100');
+            document.getElementById('modalContent').classList.remove('scale-100');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        async function confirmPurchase() {
+            const btn = document.getElementById('confirmBtn');
+            if (userBalance < selectedPlanPrice) return showToast("عذراً، رأس المال المتاح غير كافٍ لتغطية العقد");
+
+            btn.innerText = "جاري تجميد الأصول...";
+            btn.classList.add('btn-loading');
+
+            try {
+                // استدعاء الدالة الآمنة (RPC) في الخلفية لضمان عدم التلاعب
+                const { data, error } = await _supabase.rpc('activate_subscription_plan', {
+                    u_email: userEmail,
+                    p_id: selectedPlanId
+                });
+
+                if (error) throw error;
+
+                showToast("تم تفعيل الباقة وتجميد رأس المال بنجاح ✅", "success");
+                setTimeout(() => window.location.reload(), 2000);
+            } catch (err) {
+                showToast(err.message || "حدث خطأ في مزامنة العقد، حاول لاحقاً");
+                btn.innerText = "تأكيد العقد";
+                btn.classList.remove('btn-loading');
+            }
+        }
+    </script>
+</body>
+</html>
