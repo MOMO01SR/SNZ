@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNZ | Master Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; min-height: 100dvh; }
+        .glass-panel { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(6, 182, 212, 0.2); backdrop-filter: blur(20px); border-radius: 1rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+        .cyber-input { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); color: #06b6d4; font-family: monospace; transition: all 0.3s; }
+        .cyber-input:focus { border-color: #a855f7; outline: none; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
+        .tab-btn.active { background: linear-gradient(90deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2)); border-right: 4px solid #06b6d4; color: #fff; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2"></div>
+
+    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#020617] flex items-center justify-center">
+        <div class="glass-panel p-8 w-full max-w-md text-center border-t-4 border-purple-500 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full"></div>
+            <h1 class="text-2xl font-black tracking-widest text-white mb-2">SNZ <span class="text-purple-400">ADMIN</span></h1>
+            <p class="text-xs text-gray-400 font-mono mb-6 uppercase">Master Control Authentication</p>
+            
+            <input type="text" id="adminUser" placeholder="Admin Username" class="w-full cyber-input p-3 rounded-lg mb-4 text-center">
+            <input type="password" id="adminPass" placeholder="Master Password" class="w-full cyber-input p-3 rounded-lg mb-6 text-center">
+            
+            <button onclick="adminLogin()" id="loginBtn" class="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 py-3 rounded-lg font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all active:scale-95">
+                ACCESS SYSTEM
+            </button>
+        </div>
+    </div>
+
+    <aside class="w-64 bg-[#0f172a] border-l border-white/5 flex flex-col hidden" id="sidebar">
+        <div class="p-6 border-b border-white/5 text-center">
+            <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">SNZ CONTROL</h2>
+            <p class="text-[10px] text-green-400 font-mono mt-1 animate-pulse">● System Online</p>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2">
+            <button onclick="switchTab('users')" class="tab-btn active w-full text-right px-4 py-3 rounded-lg text-sm font-bold text-gray-400 hover:bg-white/5 transition-all">👥 إدارة المستخدمين</button>
+            <button onclick="switchTab('assets')" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-sm font-bold text-gray-400 hover:bg-white/5 transition-all">💰 الأصول والمحفظة</button>
+            <button onclick="switchTab('signals')" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-sm font-bold text-gray-400 hover:bg-white/5 transition-all">⚡ الصفقات (الإشارات)</button>
+            <button onclick="switchTab('deposits')" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-sm font-bold text-gray-400 hover:bg-white/5 transition-all">📥 طلبات الإيداع</button>
+            <button onclick="switchTab('withdrawals')" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-sm font-bold text-gray-400 hover:bg-white/5 transition-all">📤 طلبات السحب</button>
+        </nav>
+        <div class="p-4 border-t border-white/5">
+            <button onclick="logoutAdmin()" class="w-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white py-2 rounded-lg text-xs font-bold transition-all">تسجيل الخروج ⎋</button>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-6 custom-scroll hidden" id="mainContent">
+        
+        <section id="tab-users" class="space-y-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-black text-white">إدارة المستخدمين</h2>
+                    <p class="text-xs text-gray-400 mt-1">تعديل الأرصدة، تحديث الباسورد، وحظر الحسابات.</p>
+                </div>
+                <div class="relative w-64">
+                    <input type="text" id="searchEmail" placeholder="بحث بالبريد الإلكتروني..." class="w-full cyber-input p-2.5 rounded-lg text-xs pr-10">
+                    <button onclick="searchUser()" class="absolute right-2 top-2 text-cyan-400 hover:text-white">🔍</button>
+                </div>
+            </div>
+
+            <div class="glass-panel overflow-hidden">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-black/50 text-cyan-400 text-xs uppercase font-mono">
+                        <tr>
+                            <th class="p-4">البريد الإلكتروني</th>
+                            <th class="p-4">رأس المال</th>
+                            <th class="p-4">الأرباح</th>
+                            <th class="p-4">الباقة</th>
+                            <th class="p-4 text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody" class="divide-y divide-white/5">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-assets" class="hidden space-y-6">
+            <h2 class="text-2xl font-black text-white">إحصائيات الأصول</h2>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="glass-panel p-6 border-b-4 border-cyan-500">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-2">إجمالي إيداعات المنصة</p>
+                    <h3 class="text-3xl font-black text-cyan-400 font-mono" id="statTotalDep">Loading...</h3>
+                </div>
+                <div class="glass-panel p-6 border-b-4 border-orange-500">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-2">إجمالي السحوبات</p>
+                    <h3 class="text-3xl font-black text-orange-400 font-mono" id="statTotalWith">Loading...</h3>
+                </div>
+                <div class="glass-panel p-6 border-b-4 border-purple-500">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-2">عدد الصفقات المنفذة</p>
+                    <h3 class="text-3xl font-black text-purple-400 font-mono" id="statTotalTrades">Loading...</h3>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-signals" class="hidden space-y-6">
+            <h2 class="text-2xl font-black text-white">إدارة العقود الذكية (الإشارات)</h2>
+            
+            <div class="glass-panel p-5 bg-gradient-to-l from-purple-900/20 to-transparent border-r-4 border-purple-500 flex gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-[10px] text-gray-400 mb-1">كود الإشارة الجديد (مثال: SNZ-VIP)</label>
+                    <input type="text" id="newSignalCode" class="w-full cyber-input p-3 rounded-lg text-sm font-mono uppercase">
+                </div>
+                <div class="w-32">
+                    <label class="block text-[10px] text-gray-400 mb-1">نسبة الربح (%)</label>
+                    <input type="number" id="newSignalProfit" value="3.33" step="0.01" class="w-full cyber-input p-3 rounded-lg text-sm text-center font-mono">
+                </div>
+                <button onclick="addNewSignal()" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                    حقن الكود 🚀
+                </button>
+            </div>
+
+            <div class="glass-panel overflow-hidden">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-black/50 text-purple-400 text-xs uppercase font-mono">
+                        <tr>
+                            <th class="p-4">الكود (Signal)</th>
+                            <th class="p-4 text-center">النسبة</th>
+                            <th class="p-4 text-center">الحالة</th>
+                            <th class="p-4 text-center">عدد المستخدمين</th>
+                            <th class="p-4 text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signalsTableBody" class="divide-y divide-white/5"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-deposits" class="hidden space-y-6">
+            <h2 class="text-2xl font-black text-white">مراجعة الإيداعات (شحن الرصيد)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="depositsGrid">
+                </div>
+        </section>
+
+        <section id="tab-withdrawals" class="hidden space-y-6">
+            <h2 class="text-2xl font-black text-white">مراجعة طلبات السحب</h2>
+            <div class="glass-panel overflow-hidden">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-black/50 text-orange-400 text-xs uppercase font-mono">
+                        <tr>
+                            <th class="p-4">المستخدم</th>
+                            <th class="p-4">المبلغ</th>
+                            <th class="p-4">عنوان المحفظة (USDT TRC20)</th>
+                            <th class="p-4">التاريخ</th>
+                            <th class="p-4 text-center">القرار</th>
+                        </tr>
+                    </thead>
+                    <tbody id="withdrawalsTableBody" class="divide-y divide-white/5"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="editUserModal" class="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm hidden items-center justify-center">
+        <div class="glass-panel p-6 w-full max-w-sm border-t-4 border-cyan-500">
+            <h3 class="text-lg font-black text-cyan-400 mb-4 border-b border-white/10 pb-2">تعديل بيانات المستخدم</h3>
+            <input type="hidden" id="editUserEmail">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] text-gray-400 mb-1">رأس المال (Balance)</label>
+                    <input type="number" id="editBalance" class="w-full cyber-input p-2.5 rounded-lg text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-gray-400 mb-1">كلمة المرور الجديدة (اتركه فارغاً لعدم التغيير)</label>
+                    <input type="text" id="editPassword" placeholder="***" class="w-full cyber-input p-2.5 rounded-lg text-sm">
+                </div>
+                
+                <div class="flex gap-2 mt-6">
+                    <button onclick="saveUserEdit()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg font-bold text-sm">حفظ التعديلات</button>
+                    <button onclick="closeEditModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg font-bold text-sm">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="fixed inset-0 z-[300] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4" onclick="this.classList.add('hidden'); this.classList.remove('flex')">
+        <img id="fullSizeImage" class="max-w-full max-h-[90vh] rounded-xl border border-white/20 shadow-2xl">
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="config.js"></script> <script>
+        // إظهار الإشعارات
+        function adminAlert(msg, type='success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `px-6 py-3 rounded-lg border shadow-2xl text-xs font-bold transition-all ${type==='success'?'bg-green-900/90 border-green-500 text-green-100':'bg-red-900/90 border-red-500 text-red-100'}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // --- نظام تسجيل الدخول المحمي ---
+        async function adminLogin() {
+            const user = document.getElementById('adminUser').value;
+            const pass = document.getElementById('adminPass').value;
+            const btn = document.getElementById('loginBtn');
+            
+            if(!user || !pass) return adminAlert("أدخل البيانات", "error");
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            try {
+                // يفحص جدول admins الذي أنشأناه
+                const { data, error } = await _supabase.from('admins').select('*').eq('username', user).eq('password', pass).single();
+                
+                if (data) {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('sidebar').classList.remove('hidden');
+                    document.getElementById('mainContent').classList.remove('hidden');
+                    adminAlert("تم تسجيل الدخول بنجاح للمنظومة", "success");
+                    loadAllData(); // تحميل كل البيانات
+                } else {
+                    throw new Error("بيانات غير صحيحة");
+                }
+            } catch (err) {
+                adminAlert("بيانات الدخول غير صحيحة أو السيرفر لا يستجيب", "error");
+                btn.innerText = "ACCESS SYSTEM";
+                btn.disabled = false;
+            }
+        }
+
+        function logoutAdmin() { location.reload(); }
+
+        // --- نظام التنقل بين الأقسام ---
+        function switchTab(tabId) {
+            document.querySelectorAll('section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        // تحمبل كل البيانات عند الدخول
+        function loadAllData() {
+            loadUsers();
+            loadSignals();
+            loadDeposits();
+            loadWithdrawals();
+            loadStats();
+        }
+
+        // ==========================================
+        // القسم الأول: إدارة المستخدمين
+        // ==========================================
+        async function loadUsers(searchQ = '') {
+            let query = _supabase.from('users').select('*').order('created_at', { ascending: false }).limit(50);
+            if(searchQ) query = query.ilike('email', `%${searchQ}%`);
+
+            const { data, error } = await query;
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            
+            if(data) {
+                data.forEach(u => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="p-4 font-mono text-cyan-300 text-xs">${u.email}</td>
+                            <td class="p-4 font-mono font-bold">$${(u.balance||0).toFixed(2)}</td>
+                            <td class="p-4 font-mono text-green-400">+$${(u.profit_balance||0).toFixed(2)}</td>
+                            <td class="p-4"><span class="bg-gray-800 text-gray-300 px-2 py-1 rounded text-[10px] uppercase">${u.plan||'FREE'}</span></td>
+                            <td class="p-4 text-center">
+                                <button onclick="openEditModal('${u.email}', ${u.balance||0})" class="bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded hover:bg-cyan-600 hover:text-white transition-colors text-[10px] font-bold">تعديل بيانات</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function searchUser() { loadUsers(document.getElementById('searchEmail').value); }
+
+        function openEditModal(email, balance) {
+            document.getElementById('editUserEmail').value = email;
+            document.getElementById('editBalance').value = balance;
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editUserModal').classList.remove('hidden');
+            document.getElementById('editUserModal').classList.add('flex');
+        }
+        function closeEditModal() { document.getElementById('editUserModal').classList.add('hidden'); document.getElementById('editUserModal').classList.remove('flex'); }
+
+        async function saveUserEdit() {
+            const email = document.getElementById('editUserEmail').value;
+            const newBal = document.getElementById('editBalance').value;
+            const newPass = document.getElementById('editPassword').value;
+
+            try {
+                // استخدام الدالة الذكية (RPC) التي برمجناها في SQL
+                const { error } = await _supabase.rpc('admin_update_user', {
+                    target_email: email,
+                    new_balance: parseFloat(newBal),
+                    new_password: newPass
+                });
+                if(error) throw error;
+                
+                adminAlert("تم تحديث بيانات المستخدم بنجاح!");
+                closeEditModal();
+                loadUsers();
+            } catch(e) { adminAlert("خطأ في التحديث", "error"); }
+        }
+
+        // ==========================================
+        // القسم الثالث: الصفقات (الإشارات)
+        // ==========================================
+        async function loadSignals() {
+            const { data } = await _supabase.from('trading_signals').select('*').order('created_at', { ascending: false });
+            const tbody = document.getElementById('signalsTableBody');
+            tbody.innerHTML = '';
+            
+            if(data) {
+                data.forEach(s => {
+                    let statusHtml = s.is_active ? '<span class="text-green-400 bg-green-500/20 px-2 py-1 rounded text-[10px]">نشط (Active)</span>' : '<span class="text-red-400 bg-red-500/20 px-2 py-1 rounded text-[10px]">منتهي/محروق</span>';
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-white/5 border-b border-white/5">
+                            <td class="p-4 font-mono font-bold text-white tracking-widest">${s.signal_code}</td>
+                            <td class="p-4 text-center font-mono text-cyan-400">${s.profit_percent}%</td>
+                            <td class="p-4 text-center">${statusHtml}</td>
+                            <td class="p-4 text-center font-mono text-gray-400">---</td>
+                            <td class="p-4 text-center flex justify-center gap-2">
+                                ${s.is_active ? `<button onclick="toggleSignal('${s.signal_code}', false)" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-500/30 px-2 py-1 rounded">إيقاف</button>` : ''}
+                                <button onclick="deleteSignal('${s.signal_code}')" class="text-gray-500 hover:text-white text-xs">🗑️ حذف</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        async function addNewSignal() {
+            const code = document.getElementById('newSignalCode').value.trim().toUpperCase();
+            const prof = document.getElementById('newSignalProfit').value;
+            if(!code) return adminAlert("أدخل الكود", "error");
+
+            try {
+                // إيقاف القديم أولاً للسلامة
+                await _supabase.from('trading_signals').update({ is_active: false }).neq('signal_code', '');
+                // إدخال الجديد
+                await _supabase.from('trading_signals').insert([{ signal_code: code, profit_percent: prof, is_active: true }]);
+                
+                adminAlert("تم حقن الكود وتفعيل الصفقة بنجاح!");
+                document.getElementById('newSignalCode').value = '';
+                loadSignals();
+            } catch(e) { adminAlert("حدث خطأ", "error"); }
+        }
+
+        async function toggleSignal(code, state) {
+            await _supabase.from('trading_signals').update({ is_active: state }).eq('signal_code', code);
+            loadSignals();
+        }
+        async function deleteSignal(code) {
+            if(confirm("هل أنت متأكد من الحذف النهائي؟")) {
+                await _supabase.from('trading_signals').delete().eq('signal_code', code);
+                loadSignals();
+            }
+        }
+
+        // ==========================================
+        // القسم الرابع: الإيداعات (شحن الرصيد)
+        // ==========================================
+        async function loadDeposits() {
+            const { data } = await _supabase.from('deposits').select('*').order('created_at', { ascending: false }).limit(20);
+            const grid = document.getElementById('depositsGrid');
+            grid.innerHTML = '';
+            
+            if(data) {
+                data.forEach(d => {
+                    let badge = d.status === 'قيد المراجعة' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 
+                               (d.status === 'مكتمل' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30');
+                    
+                    // إذا لم تكن هناك صورة، استخدم لون رمادي (للاختبار)
+                    let imgHtml = d.image_url ? `<img src="${d.image_url}" onclick="viewImage('${d.image_url}')" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity">` : `<div class="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-500">لا توجد صورة</div>`;
+
+                    grid.innerHTML += `
+                        <div class="glass-panel p-4 flex flex-col gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] font-mono text-gray-400">${d.email}</span>
+                                <span class="text-[9px] px-2 py-0.5 rounded border ${badge}">${d.status}</span>
+                            </div>
+                            <h3 class="text-xl font-black text-cyan-400 font-mono">$${d.amount}</h3>
+                            ${imgHtml}
+                            <p class="text-[10px] text-gray-500 font-mono text-center">ID: ${d.transaction_id || 'N/A'}</p>
+                            
+                            ${d.status === 'قيد المراجعة' ? `
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="handleRequest('deposit', ${d.id}, 'مكتمل', '${d.email}', ${d.amount})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-2 rounded text-xs font-bold hover:bg-green-600 hover:text-white transition-all">قبول وإضافة الرصيد</button>
+                                <button onclick="handleRequest('deposit', ${d.id}, 'مرفوض')" class="bg-red-600/20 text-red-400 border border-red-500/50 px-3 py-2 rounded text-xs font-bold hover:bg-red-600 hover:text-white transition-all">رفض</button>
+                            </div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+        }
+        function viewImage(url) {
+            document.getElementById('fullSizeImage').src = url;
+            document.getElementById('imageModal').classList.remove('hidden');
+            document.getElementById('imageModal').classList.add('flex');
+        }
+
+        // ==========================================
+        // القسم الخامس: السحوبات
+        // ==========================================
+        async function loadWithdrawals() {
+            const { data } = await _supabase.from('withdrawals').select('*').order('created_at', { ascending: false }).limit(20);
+            const tbody = document.getElementById('withdrawalsTableBody');
+            tbody.innerHTML = '';
+            
+            if(data) {
+                data.forEach(w => {
+                    let badge = w.status === 'قيد المراجعة' ? 'text-yellow-400' : (w.status === 'مكتمل' ? 'text-green-400' : 'text-red-400');
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-white/5 border-b border-white/5">
+                            <td class="p-4 font-mono text-gray-300 text-xs">${w.email}</td>
+                            <td class="p-4 font-mono font-black text-orange-400">$${w.amount}</td>
+                            <td class="p-4 font-mono text-cyan-300 text-[10px] tracking-wider">${w.wallet_address || '---'}</td>
+                            <td class="p-4 text-xs text-gray-500">${new Date(w.created_at).toLocaleDateString()}</td>
+                            <td class="p-4 text-center">
+                                ${w.status === 'قيد المراجعة' ? `
+                                <button onclick="handleRequest('withdraw', ${w.id}, 'مكتمل')" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-[10px] font-bold ml-1">تحويل</button>
+                                <button onclick="handleRequest('withdraw', ${w.id}, 'مرفوض', '${w.email}', ${w.amount})" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[10px] font-bold">رفض (استرجاع)</button>
+                                ` : `<span class="${badge} text-[10px] font-bold">${w.status}</span>`}
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // --- المعالج المشترك لقبول/رفض الطلبات ---
+        async function handleRequest(type, reqId, newStatus, userEmail=null, amount=0) {
+            if(!confirm(`تأكيد تغيير حالة الطلب إلى: ${newStatus} ؟`)) return;
+
+            try {
+                // تحديث الحالة في الجدول
+                await _supabase.rpc('admin_update_request_status', { req_type: type, req_id: reqId, new_status: newStatus });
+
+                // المنطق المالي الذكي:
+                if (type === 'deposit' && newStatus === 'مكتمل') {
+                    // إذا قبلنا الإيداع، نضيف الرصيد للمستخدم
+                    const { data: u } = await _supabase.from('users').select('balance').eq('email', userEmail).single();
+                    await _supabase.rpc('admin_update_user', { target_email: userEmail, new_balance: (u.balance||0) + amount, new_password: '' });
+                } 
+                else if (type === 'withdraw' && newStatus === 'مرفوض') {
+                    // إذا رفضنا السحب، يجب أن نعيد له رصيده الذي تم خصمه
+                    const { data: u } = await _supabase.from('users').select('balance').eq('email', userEmail).single();
+                    await _supabase.rpc('admin_update_user', { target_email: userEmail, new_balance: (u.balance||0) + amount, new_password: '' });
+                }
+
+                adminAlert("تم اتخاذ الإجراء بنجاح");
+                if(type === 'deposit') loadDeposits(); else loadWithdrawals();
+                loadUsers(); // تحديث الأرصدة في الواجهة
+            } catch(e) { adminAlert("فشلت العملية", "error"); console.error(e); }
+        }
+
+        // ==========================================
+        // الإحصائيات (قسم الأصول)
+        // ==========================================
+        async function loadStats() {
+            // جلب مجموع الإيداعات المكتملة
+            const { data: dep } = await _supabase.from('deposits').select('amount').eq('status', 'مكتمل');
+            let tDep = dep ? dep.reduce((a, b) => a + parseFloat(b.amount), 0) : 0;
+            document.getElementById('statTotalDep').innerText = '$' + tDep.toFixed(2);
+
+            // جلب مجموع السحوبات المكتملة
+            const { data: wit } = await _supabase.from('withdrawals').select('amount').eq('status', 'مكتمل');
+            let tWit = wit ? wit.reduce((a, b) => a + parseFloat(b.amount), 0) : 0;
+            document.getElementById('statTotalWith').innerText = '$' + tWit.toFixed(2);
+
+            // عدد الصفقات
+            const { count } = await _supabase.from('trade_history').select('*', { count: 'exact', head: true });
+            document.getElementById('statTotalTrades').innerText = count || 0;
+        }
+
+    </script>
+</body>
+</html>
