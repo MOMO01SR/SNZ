@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SNZ | حسابي الشخصي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; padding-bottom: 90px; padding-top: 20px; min-height: 100dvh; }
+        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); transition: transform 0.3s ease; }
+        .cyber-input { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; color: #06b6d4; font-family: monospace; text-align: center; }
+        .cyber-input:focus { border-color: #a855f7; outline: none; box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); }
+        
+        /* تصميم الأزرار كما في الصورة */
+        .history-btn { background: #020617; border-radius: 1.5rem; border-width: 1px; padding: 1.25rem 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; transition: 0.3s; }
+        .history-btn:active { scale: 0.95; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="ultimateLoader" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#020617] transition-all duration-700">
+        <div class="relative w-20 h-20 flex items-center justify-center mb-6">
+            <div class="absolute inset-0 rounded-full border-t-2 border-cyan-500 animate-spin"></div>
+            <span class="text-sm font-black text-white tracking-widest">SNZ</span>
+        </div>
+        <div class="text-[8px] text-cyan-400 font-mono tracking-widest animate-pulse uppercase">Syncing Security Protocol...</div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="px-4 mb-6 space-y-4">
+        
+        <div class="glass-card p-6 border-t-4 border-cyan-500 text-center relative overflow-hidden rounded-[2rem]">
+            <div class="relative z-10">
+                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-cyan-600 to-purple-600 p-0.5 mb-3">
+                    <div class="w-full h-full bg-[#020617] rounded-full flex items-center justify-center text-2xl">👤</div>
+                </div>
+                <h2 class="text-xs font-bold text-white mb-1" id="displayEmail">loading...</h2>
+                <div id="displayUID" class="text-[9px] text-purple-400 font-mono mb-6">UID: SNZ-SYNC...</div>
+
+                <div class="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
+                    <div class="bg-black/30 p-3 rounded-2xl border border-white/5">
+                        <p class="text-[8px] text-gray-500 font-bold uppercase mb-1">رأس المال</p>
+                        <p class="text-base font-black text-white font-mono">$<span id="userCapital">0.00</span></p>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-2xl border border-white/5">
+                        <p class="text-[8px] text-gray-500 font-bold uppercase mb-1">إجمالي الأرباح</p>
+                        <p class="text-base font-black text-green-400 font-mono">$<span id="userProfit">0.00</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+            <button onclick="openHistory('deposit')" class="history-btn border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                <span class="text-xl">📥</span>
+                <span class="text-[9px] font-black text-gray-300">سجل الإيداع</span>
+            </button>
+            <button onclick="openHistory('withdraw')" class="history-btn border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+                <span class="text-xl">📤</span>
+                <span class="text-[9px] font-black text-gray-300">سجل السحب</span>
+            </button>
+            <button onclick="openHistory('trade')" class="history-btn border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                <span class="text-xl">📊</span>
+                <span class="text-[9px] font-black text-gray-300">سجل الصفقات</span>
+            </button>
+        </div>
+
+        <div class="glass-card p-5 border-r-4 border-purple-500 rounded-[1.5rem]">
+            <h3 class="text-[10px] font-black text-white mb-4 uppercase">🔐 إعدادات أمان الدخول</h3>
+            <div class="space-y-2.5">
+                <input type="password" id="oldPass" placeholder="كلمة المرور الحالية" class="w-full cyber-input p-3 rounded-xl text-[10px]">
+                <input type="password" id="newPass" placeholder="كلمة المرور الجديدة" class="w-full cyber-input p-3 rounded-xl text-[10px]">
+                <button onclick="changePassword()" id="passBtn" class="w-full bg-purple-600/20 text-purple-400 border border-purple-500/30 py-3 rounded-xl text-[10px] font-black transition-all active:scale-95">
+                    تحديث كلمة المرور
+                </button>
+            </div>
+        </div>
+
+        <button onclick="logout()" class="w-full bg-red-600/10 border border-red-600/20 text-red-500 py-4 rounded-2xl text-[10px] font-black active:scale-95">
+            تسجيل الخروج الآمن ⎋
+        </button>
+
+    </div>
+
+    <div id="historyModal" class="fixed inset-0 z-[99999] bg-[#020617]/95 backdrop-blur-md hidden flex-col items-center justify-end transition-all opacity-0">
+        <div class="glass-card w-full max-w-md max-h-[75vh] flex flex-col relative border-t-4 border-cyan-500 rounded-t-[2.5rem] transform translate-y-full transition-transform duration-300" id="historyModalContent">
+            <button onclick="closeHistory()" class="absolute top-5 left-5 text-gray-500 text-xl">✖</button>
+            <h2 id="historyTitle" class="text-center font-black text-cyan-400 py-6 border-b border-white/5 text-xs">سجل العمليات</h2>
+            <div id="historyDataList" class="overflow-y-auto p-4 space-y-3 min-h-[300px] custom-scroll"></div>
+        </div>
+    </div>
+
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-[#050b14] border-t border-white/5 pb-safe">
+        <div class="flex justify-around items-center p-3">
+            <button onclick="location.href='dashboard.html'" class="flex flex-col items-center gap-1 text-gray-500"><span class="text-lg">📈</span><span class="text-[9px]">التداول</span></button>
+            <button onclick="location.href='plans.html'" class="flex flex-col items-center gap-1 text-gray-500"><span class="text-lg">💼</span><span class="text-[9px]">الباقات</span></button>
+            <button onclick="location.href='team.html'" class="flex flex-col items-center gap-1 text-gray-500"><span class="text-lg">👥</span><span class="text-[9px]">الفريق</span></button>
+            <button class="flex flex-col items-center gap-1 text-cyan-400"><span class="text-lg">⚙️</span><span class="text-[9px] font-bold">حسابي</span></button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="config.js"></script>
+    <script>
+        const userEmail = localStorage.getItem('currentUserEmail');
+        let dbPass = "";
+
+        function showToast(msg, type='success') {
+            const container = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `px-4 py-3 rounded-xl border text-[10px] font-bold flex items-center gap-2 transform transition-all duration-300 ${type==='success'?'bg-cyan-900 border-cyan-500 text-white':'bg-red-900 border-red-500 text-white'}`;
+            t.innerHTML = `<span>${type==='success'?'✅':'🛑'}</span> <span>${msg}</span>`;
+            container.appendChild(t);
+            setTimeout(()=>t.remove(), 3000);
+        }
+
+        window.onload = async () => {
+            if(!userEmail) return location.replace('index.html');
+            await loadData();
+            setTimeout(() => {
+                document.getElementById('ultimateLoader').style.opacity = '0';
+                setTimeout(() => document.getElementById('ultimateLoader').style.display = 'none', 500);
+            }, 600);
+        };
+
+        async function loadData() {
+            const { data } = await _supabase.from('users').select('*').eq('email', userEmail).single();
+            if(data) {
+                document.getElementById('displayEmail').innerText = userEmail;
+                document.getElementById('displayUID').innerText = "UID: " + (data.uid || "SNZ-USER");
+                document.getElementById('userCapital').innerText = (parseFloat(data.balance)||0).toFixed(2);
+                document.getElementById('userProfit').innerText = (parseFloat(data.profit_balance)||0).toFixed(2);
+                dbPass = data.password;
+            }
+        }
+
+        async function openHistory(type) {
+            const modal = document.getElementById('historyModal');
+            const list = document.getElementById('historyDataList');
+            const title = document.getElementById('historyTitle');
+
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            setTimeout(() => { modal.classList.add('opacity-0'); modal.classList.remove('opacity-0'); document.getElementById('historyModalContent').classList.remove('translate-y-full'); }, 10);
+
+            list.innerHTML = '<div class="text-center py-10 animate-pulse text-cyan-400 text-[10px]">جاري جلب البيانات السحابية...</div>';
+
+            let table = (type === 'deposit') ? 'deposits' : (type === 'withdraw') ? 'withdrawals' : 'trade_history';
+            title.innerText = (type === 'deposit') ? '📥 سجل عمليات الإيداع' : (type === 'withdraw') ? '📤 سجل عمليات السحب' : '📊 سجل تداول العقود';
+
+            try {
+                // البحث الجذري: يجرب البحث بـ user_email أولاً ثم email لتفادي أخطاء المسميات
+                let res = await _supabase.from(table).select('*').eq('user_email', userEmail).order('created_at', { ascending: false });
+                if(res.error) res = await _supabase.from(table).select('*').eq('email', userEmail).order('created_at', { ascending: false });
+
+                if(!res.data || res.data.length === 0) {
+                    list.innerHTML = '<div class="text-center py-20 text-gray-600 text-[10px]">لا توجد سجلات حالياً</div>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                res.data.forEach(item => {
+                    let date = new Date(item.created_at).toLocaleString('ar-EG', {hour12:true});
+                    let status = item.status === 'completed' || item.status === 'مكتمل' ? 'مكتمل ✅' : item.status === 'rejected' || item.status === 'مرفوض' ? 'مرفوض ❌' : 'قيد المراجعة ⏳';
+                    let sColor = status.includes('مكتمل') ? 'text-green-400' : status.includes('مرفوض') ? 'text-red-400' : 'text-yellow-500';
+                    
+                    let amt = parseFloat(item.amount).toFixed(2);
+                    let profitPart = type === 'trade' ? `<div class="text-[11px] font-black text-green-400">+$${(parseFloat(item.profit)||0).toFixed(2)}</div>` : '';
+
+                    list.innerHTML += `
+                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[9px] text-gray-500 font-mono">${date}</span>
+                                <span class="text-[10px] font-bold ${sColor}">${status}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs font-black text-white">$${amt}</div>
+                                ${profitPart}
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { list.innerHTML = '<div class="text-center py-10 text-red-500 text-[10px]">خطأ في الاتصال بالقاعدة</div>'; }
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModalContent').classList.add('translate-y-full');
+            setTimeout(() => { document.getElementById('historyModal').classList.add('hidden'); }, 300);
+        }
+
+        async function changePassword() {
+            const oldP = document.getElementById('oldPass').value;
+            const newP = document.getElementById('newPass').value;
+            if(oldP !== dbPass) return showToast("كلمة المرور الحالية خاطئة", "error");
+            if(newP.length < 6) return showToast("الكلمة الجديدة قصيرة جداً", "error");
+
+            const { error } = await _supabase.from('users').update({ password: newP }).eq('email', userEmail);
+            if(!error) { showToast("تم التحديث بنجاح"); document.getElementById('oldPass').value=''; document.getElementById('newPass').value=''; loadData(); }
+        }
+
+        function logout() { localStorage.clear(); location.replace('index.html'); }
+    </script>
+</body>
+</html>
